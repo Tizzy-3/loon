@@ -145,4 +145,4 @@ if (!email || !password) {
 } else {
   notify('iios.fun', '开始登录签到', '账号：' + maskAccount(email));
   startCheckinByLogin(email, password, clientId);
-loon使用时报错Can't find variable: $prefs
+}
