@@ -10,9 +10,8 @@ const CLIENT_ID_KEY = 'iios_client_id';
 const POLL_INTERVAL = 3000;
 const MAX_POLLS = 15;
 
-// ========== 修复：Loon 专用存储读取 ==========
 function read(key) {
-  return $persist.store.getString(key) || '';
+  return $persistentStore.read(key) || '';
 }
 
 function notify(title, subTitle, message) {
@@ -146,4 +145,4 @@ if (!email || !password) {
 } else {
   notify('iios.fun', '开始登录签到', '账号：' + maskAccount(email));
   startCheckinByLogin(email, password, clientId);
-}
+loon使用时报错Can't find variable: $prefs
