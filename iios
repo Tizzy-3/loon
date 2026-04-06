@@ -14,8 +14,13 @@ function read(key) {
   return $persistentStore.read(key) || '';
 }
 
+
 function notify(title, subTitle, message) {
-  $notify(String(title || ''), String(subTitle || ''), String(message || ''));
+  $notification.post(
+    String(title || ''),
+    String(subTitle || ''),
+    String(message || '')
+  );
 }
 
 function done(value) {
