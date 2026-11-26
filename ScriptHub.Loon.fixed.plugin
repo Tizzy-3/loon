@@ -1,0 +1,21 @@
+#!name=墨鱼手记页一键添加插件（Loon 修正版）
+#!desc=Tab栏显示 Loon，代表网页变身成功，即可一键添加插件。修正：http-response 补 requires-body=true
+#!author=@ddgksf2013 @小白脸 @xream @keywos @ckyb
+#!tag=工具
+#!homepage=https://ddgksf2013.top
+#!pluginUrl=https://ddgksf2013.top/module/ScriptHub.Loon.plugin
+
+[General]
+force-http-engine-hosts = script.hub, *.script.hub
+
+[Rule]
+# Loon 没有 REJECT-NO-DROP 策略名，改用 REJECT-DROP；作用是不让 Safari 走 QUIC，否则 MITM 抓不到
+AND, ((DOMAIN-SUFFIX, ddgksf2013.top), (PROTOCOL, QUIC)), REJECT-DROP
+
+[Script]
+# 原插件缺 requires-body=true，$response.body 为 undefined，脚本必抛错 -> 页面不变
+http-response ^https?:\/\/ddgksf2013\.top\/$ script-path=https://ddgksf2013.top/scripts/web.loon.js, requires-body=true, max-size=-1, timeout=300, tag=网页变身, enable=true
+http-request ^https?:\/\/script\.hub\/file\/_start_\/.+type=(?:qx-rewrite|surge-module|loon-plugin|all-module) script-path=https://raw.githubusercontent.com/Script-Hub-Org/Script-Hub/main/Rewrite-Parser.js, requires-body=false, timeout=300, tag=脚本转换, enable=true
+
+[MITM]
+hostname = script.hub, *.script.hub, ddgksf2013.top
