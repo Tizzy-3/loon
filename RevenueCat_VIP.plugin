@@ -1,0 +1,9 @@
+#!name=RevenueCat 多合一解锁（墨鱼版）
+#!desc=RevenueCat / rc-backup 会员解锁 + 移除 ETag 请求头，等价于 QX 重写 revenuecat.vip.js，原作者 @ddgksf2013
+
+[Script]
+http-response ^https:\/\/api\.(revenuecat|rc-backup)\.com\/.+\/(receipts$|subscribers\/[^/]+$) script-path=https://ddgksf2013.top/scripts/revenuecat.vip.js, requires-body=true, max-size=-1, timeout=60, tag=RevenueCat VIP 响应改写, enable=true
+http-request ^https:\/\/api\.(revenuecat|rc-backup)\.com\/.+\/(receipts|subscribers) script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/master/deleteHeader.js, requires-body=false, timeout=60, tag=RevenueCat 移除ETag, enable=true
+
+[MITM]
+hostname = api.revenuecat.com, api.rc-backup.com
