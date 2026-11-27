@@ -1,14 +1,21 @@
-#!name=Tizzy3 每日签到
-#!desc=哈士奇 / IMYAI / 金蝶云社区每日签到。凭证捕获由 BoxJS 开关控制，默认关闭。需 Loon 并安装、信任 MITM 证书（Loon 证书与 Surge 不通用）。每天设备本地时间 07:00 自动签到；Loon 没有 Surge 的 Panel 面板，想手动跑一次请在 Loon「脚本」页找到 tag=Tizzy3_DailySignIn 的定时任务点「运行」。
-# 转换说明：原 Surge 模块的 [Panel] 与 type=generic(engine=webview) 手动面板项 Loon 不支持，已删除；其余脚本参数等价迁移，engine=jsc 为 Surge 专属已去掉。
+#!name=每日签到（可配置）
+#!desc=哈士奇 / IMYAI / 金蝶 三站每日签到。装好后在「配置 → 插件」点本插件即可改签到时间、开关定时签到、开关凭证抓取；在「配置 → 脚本」里可以手动点「立即签到」跑一次。
+#!tag=签到,工具
+#!loon_version = 3.5.1(983)
+
+[Argument]
+signin_cron = input,"0 7 * * *",tag=签到时间,desc=五段 cron：分 时 日 月 周。例：0 7 * * * = 每天 07:00；30 8,20 * * * = 每天 08:30 和 20:30；0 */6 * * * = 每 6 小时
+signin_on = switch,true,type=boolean,tag=启用定时签到
+capture_on = switch,false,type=boolean,tag=打开即开始抓取凭证,desc=抓取时打开、抓完关掉。抓取脚本自带一道总闸：首次使用请在 BoxJS 原始存储把 QX_SIGNIN_CAPTURE_ENABLED 设为 true
 
 [Script]
-cron "0 7 * * *" script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_signin.js?v=manual-panel-1, timeout=300, tag=Tizzy3_DailySignIn, enable=true
-http-response ^https://www\.haxiaohaios2\.com/ script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1, timeout=10, tag=Tizzy3_Hashiqi_Cookie, enable=true
-http-response ^https://super\.imyaigc\.com/ script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1, timeout=10, tag=Tizzy3_IMYAI_Web_Cookie, enable=true
-http-request ^https://api\.(daka\.today|imyaigc\.com)/api/ script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1, timeout=10, tag=Tizzy3_IMYAI_Request_Cookie, enable=true
-http-response ^https://api\.(daka\.today|imyaigc\.com)/api/ script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1, requires-body=true, max-size=2097152, timeout=10, tag=Tizzy3_IMYAI_Response_Cookie, enable=true
-http-response ^https://vip\.kingdee\.com/ script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1, timeout=10, tag=Tizzy3_Kingdee_Cookie, enable=true
+cron ${signin_cron} then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_signin.js?v=manual-panel-1") with enable=${signin_on}, timeout=300, tag=每日签到(定时)
+generic then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_signin.js?v=manual-panel-1") with tag=立即签到(手动), img_url="play.circle", timeout=300
+response if ${url} ~= /^https:\/\/www\.haxiaohaios2\.com\// then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1") with enable=${capture_on}, requires_body=true, timeout=10, tag=抓取·哈士奇
+response if ${url} ~= /^https:\/\/super\.imyaigc\.com\// then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1") with enable=${capture_on}, requires_body=true, timeout=10, tag=抓取·IMYAI首页
+request if ${url} ~= /^https:\/\/api\.(daka\.today|imyaigc\.com)\/api\// then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1") with enable=${capture_on}, timeout=10, tag=抓取·IMYAI请求
+response if ${url} ~= /^https:\/\/api\.(daka\.today|imyaigc\.com)\/api\// then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1") with enable=${capture_on}, requires_body=true, timeout=10, tag=抓取·IMYAI响应
+response if ${url} ~= /^https:\/\/vip\.kingdee\.com\// then script("https://raw.githubusercontent.com/Tizzy-3/Surge/main/daily-signin/surge_cookie_capture.js?v=boxjs-capture-1") with enable=${capture_on}, requires_body=true, timeout=10, tag=抓取·金蝶
 
 [MitM]
 hostname = %APPEND% www.haxiaohaios2.com, super.imyaigc.com, api.daka.today, api.imyaigc.com, vip.kingdee.com

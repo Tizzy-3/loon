@@ -1,10 +1,17 @@
-#!name=WPS 每日签到
-#!desc=每天 10:00 自动签到；Cookie 获取由 BoxJS 开关控制，默认关闭。需 Loon 并安装、信任 MITM 证书。Loon 没有 Surge 的 Panel 面板，手动跑一次请在 Loon「脚本」页找到 tag=WPS_SignIn 的定时任务点「运行」。
-# 转换说明：原 [Panel] 与 type=generic(wps.panel.js, engine=webview) 手动面板项 Loon 不支持，已删除；cookie 捕获里的 requires-body=false / max-size=0 为 Surge 默认值，Loon 侧省略即为默认不取 body。
+#!name=WPS 签到（可配置）
+#!desc=WPS 每日签到。装好后在「配置 → 插件」点本插件即可改签到时间、开关定时签到、开关 Cookie 抓取；在「配置 → 脚本」里可以手动点「WPS 立即签到」。
+#!tag=签到,工具
+#!loon_version = 3.5.1(983)
+
+[Argument]
+signin_cron = input,"0 10 * * *",tag=签到时间,desc=五段 cron：分 时 日 月 周。例：0 10 * * * = 每天 10:00；0 9,21 * * * = 每天 09:00 与 21:00
+signin_on = switch,true,type=boolean,tag=启用定时签到
+cookie_on = switch,true,type=boolean,tag=打开即开始抓取 Cookie,desc=打开后进 WPS 活动页就会自动抓 wps_sid 并存好；抓完可以关掉
 
 [Script]
-http-request ^https://personal-act\.wps\.cn/activity-rubik/activity/page_info script-path=https://raw.githubusercontent.com/Tizzy-3/Surge/main/wps/wps.cookie.capture.js?v=boxjs-capture-1, timeout=10, tag=WPS_Cookie, enable=true
-cron "0 10 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.js, timeout=120, tag=WPS_SignIn, enable=true
+cron ${signin_cron} then script("https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.js") with enable=${signin_on}, timeout=120, tag=WPS签到(定时)
+generic then script("https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.js") with tag=WPS立即签到(手动), img_url="play.circle", timeout=120
+request if ${url} ~= /^https:\/\/personal-act\.wps\.cn\/activity-rubik\/activity\/page_info/ then script("https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.cookie.js") with enable=${cookie_on}, timeout=10, tag=WPS抓Cookie
 
 [MitM]
 hostname = %APPEND% personal-act.wps.cn
