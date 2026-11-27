@@ -6,14 +6,13 @@
 #!date = 2026-11-27
 
 [Argument]
-sign_enable = switch, true, tag = 定时签到开关, desc = 开启后按定时任务自动执行 WPS 签到与福利任务
-sign_cron = input, "0 10 * * *", tag = 签到定时 (Cron), desc = 默认每天 10:00 执行（5位 Cron 表达式：分 时 日 月 周）
+sign_enable = switch, true, tag = 定时签到开关, desc = 开启后每天 10:00 自动执行 WPS 签到与福利任务
 capture_enable = switch, false, tag = 获取 Cookie, desc = 默认关闭。打开后进入已登录 WPS App 的任务中心/福利中心获取 wps_sid，获取成功后请关闭此开关
 
 [Script]
 http-request ^https:\/\/personal-act\.wps\.cn\/activity-rubik\/activity\/page_info script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.cookie.js, requires-body=false, timeout=10, tag=WPS 获取 Cookie, enable={capture_enable}
 
-cron "{sign_cron}" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.js, timeout=120, tag=WPS 每日签到, enable={sign_enable}
+cron "0 10 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/wps/wps.js, timeout=120, tag=WPS 每日签到, enable={sign_enable}
 
 [MITM]
 hostname = personal-act.wps.cn
