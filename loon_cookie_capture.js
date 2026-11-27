@@ -32,7 +32,7 @@ function capture() {
     const requestCookie = reqHeaders.cookie || "";
     const responseSetCookie = resHeaders["set-cookie"] || "";
     const mergedCookie = mergeCookies(requestCookie, responseSetCookie);
-    const authorization = reqHeaders.authorization || "";
+    const authorization = reqHeaders.authorization || reqHeaders.token || reqHeaders["x-token"] || reqHeaders["x-access-token"] || "";
 
     const saved = [];
     if (host === "www.haxiaohaios2.com" && mergedCookie) {
@@ -40,13 +40,16 @@ function capture() {
       notifyIfSaved(saved, "哈士奇", "获取cookies成功", "HASHIQI_COOKIE");
     }
 
-    if (host === "api.daka.today" || host === "api.imyaigc.com" || host === "super.imyaigc.com") {
+    if (/(^|\.)(daka\.today|imyaigc\.com)$/i.test(host)) {
       const jwt = extractJwt(authorization, mergedCookie, res && res.body);
       if (jwt) {
+        const prev = normalizeStoredValue("IMYAI_JWT", pref(`${PREFIX}IMYAI_JWT`));
         save("IMYAI_JWT", jwt, saved);
+        const status = saved.includes("IMYAI_JWT") ? "saved" : (prev === jwt ? "unchanged" : "write_failed");
+        captureLog(isLoon, `IMYAI ${res ? "res" : "req"} ${host}: jwt=found(${jwt.length}), status=${status}`);
         notifyIfSaved(saved, "IMYAI", "获取token成功", "IMYAI_JWT");
       } else {
-        debugLog(`IMYAI matched ${host}, but no JWT found. auth=${authorization ? "yes" : "no"}, cookie=${mergedCookie ? "yes" : "no"}, body=${res && res.body ? "yes" : "no"}`);
+        captureLog(isLoon, `IMYAI ${res ? "res" : "req"} ${host}: jwt=none, auth=${authorization ? "yes" : "no"}, cookie=${mergedCookie ? "yes" : "no"}, body=${res && res.body ? "yes" : "no"}`);
       }
     }
 
@@ -129,9 +132,15 @@ function extractJwt(authorization, cookie, responseBody) {
   if (bearer && bearer[1]) {
     return bearer[1].trim();
   }
-  const fromCookie = extractCookieValue(cookie, "CROSS_DOMAIN_JWT") ||
+  const authJwt = matchJwt(authorization);
+  if (authJwt) {
+    return authJwt;
+  }
+  const fromCookie = safeDecodeURIComponent(
+    extractCookieValue(cookie, "CROSS_DOMAIN_JWT") ||
     extractCookieValue(cookie, "jwt") ||
-    extractCookieValue(cookie, "token");
+    extractCookieValue(cookie, "token")
+  );
   if (fromCookie) {
     return fromCookie;
   }
@@ -144,6 +153,18 @@ function extractJwt(authorization, cookie, responseBody) {
     return findTokenValue(body) || "";
   } catch (error) {
     return "";
+  }
+}
+
+function safeDecodeURIComponent(value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return "";
+  }
+  try {
+    return decodeURIComponent(text);
+  } catch (error) {
+    return text;
   }
 }
 
@@ -247,7 +268,7 @@ function cookiePair(part) {
 
 function parseUrl(url) {
   const matched = /^https?:\/\/([^\/?#]+)([\/?#]|$)/i.exec(String(url || ""));
-  return { hostname: matched ? matched[1] : "" };
+  return { hostname: matched ? matched[1].replace(/:\d+$/, "") : "" };
 }
 
 function pref(key) {
@@ -278,11 +299,15 @@ function notify(title, subtitle, body) {
   }
 }
 
-function debugLog(message) {
-  if (/^(1|true|yes|on)$/i.test(String(pref(`${PREFIX}DEBUG`) || "")) && typeof console !== "undefined" && console.log) {
-    const tag = typeof $loon !== "undefined" ? "LOON_SIGNIN_CAPTURE" : "SURGE_SIGNIN_CAPTURE";
+function captureLog(isLoon, message) {
+  if ((isLoon || /^(1|true|yes|on)$/i.test(String(pref(`${PREFIX}DEBUG`) || ""))) && typeof console !== "undefined" && console.log) {
+    const tag = isLoon ? "LOON_SIGNIN_CAPTURE" : "SURGE_SIGNIN_CAPTURE";
     console.log(`[${tag}] ${message}`);
   }
+}
+
+function debugLog(message) {
+  captureLog(false, message);
 }
 
 function finish(message) {

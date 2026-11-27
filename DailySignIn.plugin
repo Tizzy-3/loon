@@ -10,14 +10,18 @@ sign_enable = switch, true, tag = 定时签到开关, desc = 开启后按定时�
 sign_cron = input, "0 7 * * *", tag = 签到定时 (Cron), desc = 默认每天 07:00 执行（5位 Cron 表达式：分 时 日 月 周）
 capture_enable = switch, false, tag = 获取 Cookie/Token, desc = 默认关闭。打开后在浏览器登录对应网站捕获凭证，获取成功后请关闭此开关
 
+[Rule]
+# 阻止 IMYAI (Tencent EdgeOne) 走 HTTP/3 (QUIC)，确保 Loon MITM 能正常解密捕获 Token
+AND, ((DOMAIN-SUFFIX, imyaigc.com), (PROTOCOL, QUIC)), REJECT-DROP
+AND, ((DOMAIN-SUFFIX, daka.today), (PROTOCOL, QUIC)), REJECT-DROP
+
 [Script]
 cron "{sign_cron}" script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_signin.js, timeout=300, tag=Tizzy3 每日签到, enable={sign_enable}
 
-http-response ^https:\/\/www\.haxiaohaios2\.com\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js, requires-body=false, timeout=10, tag=哈士奇 Cookie 捕获, enable={capture_enable}
-http-response ^https:\/\/super\.imyaigc\.com\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js, requires-body=false, timeout=10, tag=IMYAI Web 捕获, enable={capture_enable}
-http-request ^https:\/\/api\.(daka\.today|imyaigc\.com)\/api\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js, requires-body=false, timeout=10, tag=IMYAI Request 捕获, enable={capture_enable}
-http-response ^https:\/\/api\.(daka\.today|imyaigc\.com)\/api\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js, requires-body=true, max-size=2097152, timeout=10, tag=IMYAI Response 捕获, enable={capture_enable}
-http-response ^https:\/\/vip\.kingdee\.com\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js, requires-body=false, timeout=10, tag=金蝶云社区 Cookie 捕获, enable={capture_enable}
+http-response ^https:\/\/www\.haxiaohaios2\.com\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js?v=2, requires-body=false, timeout=10, tag=哈士奇 Cookie 捕获, enable={capture_enable}
+http-request ^https:\/\/[^\/]+\.(imyaigc\.com|daka\.today)\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js?v=2, requires-body=false, timeout=10, tag=IMYAI Request 捕获, enable={capture_enable}
+http-response ^https:\/\/api\.(daka\.today|imyaigc\.com)\/api\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js?v=2, requires-body=true, max-size=-1, timeout=10, tag=IMYAI Response 捕获, enable={capture_enable}
+http-response ^https:\/\/vip\.kingdee\.com\/ script-path=https://raw.githubusercontent.com/Tizzy-3/loon/main/loon_cookie_capture.js?v=2, requires-body=false, timeout=10, tag=金蝶云社区 Cookie 捕获, enable={capture_enable}
 
 [MITM]
-hostname = www.haxiaohaios2.com, super.imyaigc.com, api.daka.today, api.imyaigc.com, vip.kingdee.com
+hostname = www.haxiaohaios2.com, *.imyaigc.com, *.daka.today, vip.kingdee.com
